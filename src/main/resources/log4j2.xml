@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        # Console appender
+        <Console name="stdout" target="SYSTEM_OUT">
+            # Pattern of log message for console appender
+            <PatternLayout pattern="%d [%t] %-5p %c - %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        # Override log level for specified package
+        <Logger name="com.baeldung.log4j2" level="TRACE"/>
+
+        <Root level="DEBUG">
+            <AppenderRef ref="stdout"/>
+        </Root>
+    </Loggers>
+</Configuration>
