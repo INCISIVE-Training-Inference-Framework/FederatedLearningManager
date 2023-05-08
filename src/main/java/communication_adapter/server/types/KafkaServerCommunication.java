@@ -44,6 +44,8 @@ public class KafkaServerCommunication implements ServerCommunicationAdapter {
         return abstractClassVariables;
     }
 
+    private final String messageSeparator = "///MESSAGE_SEP///";
+
     private final String executionId;
     private final int numberOfClients;
 
@@ -105,11 +107,11 @@ public class KafkaServerCommunication implements ServerCommunicationAdapter {
                 for (ConsumerRecord<String, String> record: consumerRecords) {
                     // key -> executionId (from manager) or executionId_clientId (from client)
                     // value -> true or false
-                    boolean fromClient = record.key().contains("_");
+                    boolean fromClient = record.key().contains(messageSeparator);
                     if (fromClient) {
-                        boolean fromThisExecution = this.executionId.equals(record.key().split("_")[0]);
+                        boolean fromThisExecution = this.executionId.equals(record.key().split(messageSeparator)[0]);
                         if (fromThisExecution) {
-                            String clientId = record.key().split("_")[1];
+                            String clientId = record.key().split(messageSeparator)[1];
                             boolean success = Boolean.parseBoolean(record.value());
                             if (success) {
                                 logger.debug("Started iteration message received from client with id " + clientId);
@@ -149,7 +151,7 @@ public class KafkaServerCommunication implements ServerCommunicationAdapter {
                 for (ConsumerRecord<String, byte[]> record: consumerRecords) {
                     // key -> executionId_clientId
                     // value -> model or null
-                    String clientId = record.key().split("_")[1];
+                    String clientId = record.key().split(messageSeparator)[1];
                     byte[] bytes = record.value();
                     if (bytes != null && bytes.length != 0) {
                         logger.debug("Ended iteration message received from client with id " + clientId);

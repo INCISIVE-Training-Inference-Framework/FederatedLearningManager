@@ -23,6 +23,7 @@ public class Incisive implements PlatformAdapter {
     @Override
     public void communicateExecutionFailure(String failureEndpoint, String message) throws PlatformException {
         JSONObject entity = new JSONObject();
+        entity.put("message", message);
         Set<Integer> expectedStatusCode = new HashSet<>();
         expectedStatusCode.add(200);
         try {

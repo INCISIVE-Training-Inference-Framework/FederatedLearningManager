@@ -44,6 +44,8 @@ public class KafkaClientCommunication implements ClientCommunicationAdapter {
         return abstractClassVariables;
     }
 
+    private final String messageSeparator = "///MESSAGE_SEP///";
+
     private final String executionId;
     private final String dataPartner;
     private final String bootstrapServersConfig;
@@ -81,7 +83,7 @@ public class KafkaClientCommunication implements ClientCommunicationAdapter {
         try {
             final ProducerRecord<String, String> record = new ProducerRecord<>(
                     "status",
-                    this.executionId + "_" + this.dataPartner,  // key
+                    this.executionId + messageSeparator + this.dataPartner,  // key
                     String.valueOf(success)  // value
             );
             record.headers().add("message_name", "client_initialization".getBytes(StandardCharsets.UTF_8));
@@ -106,7 +108,7 @@ public class KafkaClientCommunication implements ClientCommunicationAdapter {
                 for (ConsumerRecord<String, String> record: consumerRecords) {
                     // key -> executionId (from manager) or executionId_clientId (from client)
                     // value -> true or false
-                    boolean fromManager = !record.key().contains("_");
+                    boolean fromManager = !record.key().contains(messageSeparator);
                     if (fromManager) {
                         boolean fromThisExecution = this.executionId.equals(record.key());
                         if (fromThisExecution) {
@@ -143,7 +145,7 @@ public class KafkaClientCommunication implements ClientCommunicationAdapter {
         try {
             final ProducerRecord<String, byte[]> record = new ProducerRecord<>(
                     this.executionId + "_models_to_manager",
-                    this.executionId + "_" + this.dataPartner,  // key
+                    this.executionId + messageSeparator + this.dataPartner,  // key
                     model  // value
             );
             record.headers().add("message_name", "ended_iteration".getBytes(StandardCharsets.UTF_8));
@@ -240,7 +242,7 @@ public class KafkaClientCommunication implements ClientCommunicationAdapter {
         this.modelsToClientsConsumer = new KafkaConsumer<>(properties);
         partitions = new ArrayList<>();
         partitionInfos = modelsToClientsConsumer.partitionsFor(executionId + "_models_to_clients");
-        if (partitionInfos == null || partitionInfos.size() == 0) throw new CommunicationException("Topic " + executionId + "_models_to_client not already created", null);
+        if (partitionInfos == null || partitionInfos.size() == 0) throw new CommunicationException("Topic " + executionId + "_models_to_clients not already created", null);
         for (PartitionInfo partition : partitionInfos) partitions.add(new TopicPartition(partition.topic(), partition.partition()));
         modelsToClientsConsumer.assign(partitions);  // standalone consumer
     }
