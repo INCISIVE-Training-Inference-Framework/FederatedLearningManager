@@ -1,5 +1,6 @@
 import ai_engine_adapter.linkage.AIEngineLinkageAdapter;
-import ai_engine_adapter.linkage.types.AsyncRestAPI;
+import ai_engine_adapter.linkage.types.async_rest_api.AsyncRestAPI;
+import ai_engine_adapter.linkage.types.dummy.Dummy;
 import ai_engine_adapter.model_management.client.AIEngineClientModelManagementAdapter;
 import ai_engine_adapter.model_management.server.AIEngineServerModelManagementAdapter;
 import communication_adapter.client.ClientCommunicationAdapter;
@@ -51,7 +52,7 @@ public class Factory {
                 config = loadEnvironmentVariables(AsyncRestAPI.getEnvironmentVariables());
                 return new AsyncRestAPI(config);
             case "DUMMY":
-                return new ai_engine_adapter.linkage.types.Dummy();
+                return new Dummy();
             default:
                 throw new BadConfigurationException("AI engine linkage adapter implementation unknown: " + aiEngineAdapterImplementation + ". Available: KUBERNETES_API and ASYNC_REST_API");
         }

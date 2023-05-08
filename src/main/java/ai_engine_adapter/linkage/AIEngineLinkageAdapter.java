@@ -10,6 +10,8 @@ public interface AIEngineLinkageAdapter {
 
     void run(String useCase) throws AIEngineException;
 
+    void end() throws AIEngineException;
+
     void clean() throws AIEngineException;
 
 }

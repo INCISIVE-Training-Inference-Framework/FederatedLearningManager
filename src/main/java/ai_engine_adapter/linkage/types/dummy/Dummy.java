@@ -1,4 +1,4 @@
-package ai_engine_adapter.linkage.types;
+package ai_engine_adapter.linkage.types.dummy;
 
 import ai_engine_adapter.linkage.AIEngineLinkageAdapter;
 import exceptions.AIEngineException;
@@ -22,6 +22,11 @@ public class Dummy implements AIEngineLinkageAdapter {
     @Override
     public void run(String useCase) {
         logger.debug("run method called");
+    }
+
+    @Override
+    public void end() throws AIEngineException {
+        logger.debug("end method called");
     }
 
     @Override

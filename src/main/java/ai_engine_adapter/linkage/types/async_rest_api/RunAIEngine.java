@@ -1,12 +1,9 @@
-package ai_engine_adapter.linkage.types;
+package ai_engine_adapter.linkage.types.async_rest_api;
 
-import ai_engine_adapter.linkage.AIEngineLinkageAdapter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import config.EnvironmentVariable;
-import config.EnvironmentVariableType;
-import exceptions.AIEngineException;
+import exceptions.InternalException;
 import org.apache.http.HttpStatus;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.config.RequestConfig;
@@ -17,7 +14,6 @@ import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -30,30 +26,17 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 
-public class AsyncRestAPI implements AIEngineLinkageAdapter {
+public class RunAIEngine {
 
-    private static final int PING_TIMEOUT = 10;  // seconds
+    private static final int PING_TIMEOUT = 3;  // seconds
+    private static final int RUN_TIMEOUT = 3;  // seconds
     private static CountDownLatch countDownLatch = null;
     private static ServerHandlingOutput serverHandlingOutput = null;
-    private static final Logger logger = LogManager.getLogger(AsyncRestAPI.class);
-    public static List<EnvironmentVariable> getEnvironmentVariables() {
-        List<EnvironmentVariable> abstractClassVariables = new ArrayList<>();
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_MAX_ITERATION_TIME", EnvironmentVariableType.LONG));  // seconds
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_MAX_INITIALIZATION_TIME", EnvironmentVariableType.LONG));  // seconds
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_CLIENT_HOST", EnvironmentVariableType.STRING, "127.0.0.1:8080"));  // ipv4
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_SERVER_HOST", EnvironmentVariableType.STRING, "127.0.0.1:8081"));  // ipv4
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_PING_URL", EnvironmentVariableType.STRING, "/api/ping"));
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_RUN_URL", EnvironmentVariableType.STRING, "/api/run"));
-        abstractClassVariables.add(new EnvironmentVariable("AI_ENGINE_LINKAGE_ADAPTER_CALLBACK_URL", EnvironmentVariableType.STRING, "/api/callback"));
-        return abstractClassVariables;
-    }
+    private static final Logger logger = LogManager.getLogger(RunAIEngine.class);
 
     private final long maxIterationTime;
     private final long maxInitializationTime;
@@ -65,14 +48,22 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
 
     private HttpServer server;
 
-    public AsyncRestAPI(Map<String, Object> config) {
-        this.maxIterationTime = (long) config.get("AI_ENGINE_LINKAGE_ADAPTER_MAX_ITERATION_TIME");
-        this.maxInitializationTime = (long) config.get("AI_ENGINE_LINKAGE_ADAPTER_MAX_INITIALIZATION_TIME");
-        this.clientHost = (String) config.get("AI_ENGINE_LINKAGE_ADAPTER_CLIENT_HOST");
-        this.serverHost = (String) config.get("AI_ENGINE_LINKAGE_ADAPTER_SERVER_HOST");
-        this.pingUrl = (String) config.get("AI_ENGINE_LINKAGE_ADAPTER_PING_URL");
-        this.runUrl = (String) config.get("AI_ENGINE_LINKAGE_ADAPTER_RUN_URL");
-        this.callbackUrl = (String) config.get("AI_ENGINE_LINKAGE_ADAPTER_CALLBACK_URL");
+    public RunAIEngine(
+            long maxIterationTime,
+            long maxInitializationTime,
+            String clientHost,
+            String serverHost,
+            String pingUrl,
+            String runUrl,
+            String callbackUrl
+    ) {
+        this.maxIterationTime =maxIterationTime;
+        this.maxInitializationTime = maxInitializationTime;
+        this.clientHost = clientHost;
+        this.serverHost = serverHost;
+        this.pingUrl = pingUrl;
+        this.runUrl = runUrl;
+        this.callbackUrl = callbackUrl;
     }
 
     private final class ServerHandlingOutput {
@@ -94,24 +85,23 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
         }
     }
 
-    @Override
-    public void initialize() throws AIEngineException {
+    public void initialize() throws InternalException {
         String serverIp = serverHost.split(":")[0];
         int serverPort = Integer.parseInt(serverHost.split(":")[1]);
 
         try {
             this.server = HttpServer.create(new InetSocketAddress(serverIp, serverPort), 0);
         } catch (IOException e) {
-            e.printStackTrace();
-            throw new AIEngineException("Error while initializing server", e);
+            throw new InternalException("Error while initializing server", e);
         }
         this.server.createContext(this.callbackUrl, new ServerHandler());
         this.server.setExecutor(null); // creates a default executor
         this.server.start();
     }
 
-    @Override
-    public void waitAIEngineToBeReady() throws AIEngineException {
+    public void waitAIEngineToBeReady() throws InternalException {
+        logger.debug("Waiting for AI Engine to be ready");
+
         Timestamp startTime = Timestamp.from(Instant.now());
         Timestamp currentTime = startTime;
         boolean AIEngineStarted = false;
@@ -129,11 +119,11 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
                 try(CloseableHttpResponse response = client.execute(new HttpGet(String.format("http://%s%s", this.clientHost, this.pingUrl)))) {
                     int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_OK) AIEngineStarted = true;
-                    else throw new AIEngineException(String.format("Error while waiting for the AI Engine to be ready (during the query). Incorrect initialization with status code %d", statusCode), null);
+                    else throw new InternalException(String.format("Error while waiting for the AI Engine to be ready (during the query). Incorrect initialization with status code %d", statusCode), null);
                 } catch (ConnectException | NoHttpResponseException | ConnectTimeoutException e) {
                     // do nothing
                 } catch (IOException e) {
-                    throw new AIEngineException("Error while waiting for the AI Engine to be ready (during the query)", e);
+                    throw new InternalException("Error while waiting for the AI Engine to be ready (during the query)", e);
                 }
 
                 // sleep 3 seconds
@@ -141,7 +131,7 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
                     try {
                         Thread.sleep(3000);
                     } catch (InterruptedException e) {
-                        throw new AIEngineException("Error while waiting for the AI Engine to be ready (during the thread sleep)", e);
+                        throw new InternalException("Error while waiting for the AI Engine to be ready (during the thread sleep)", e);
                     }
                 }
 
@@ -149,15 +139,17 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
             }
 
         } catch (IOException e) {
-            throw new AIEngineException("Error while waiting for the AI Engine to be ready (during the client instantiation)", e);
+            throw new InternalException("Error while waiting for the AI Engine to be ready (during the client instantiation)", e);
         }
 
-        if (!AIEngineStarted) throw new AIEngineException("Error while waiting for the AI Engine to be ready. It did not start before the timeout", null);
+        if (!AIEngineStarted) throw new InternalException("Error while waiting for the AI Engine to be ready. It did not start before the timeout", null);
     }
 
-    @Override
-    public void run(String useCase) throws AIEngineException {
-        try(CloseableHttpClient client = HttpClients.createDefault()) {
+    public void run(String useCase) throws InternalException {
+        logger.debug(String.format("Running the AI Engine. Use case: %s", useCase));
+
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(RUN_TIMEOUT * 1000).build();
+        try(CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build()) {
 
             // create post
             HttpPost httpPost = new HttpPost(String.format(
@@ -177,9 +169,9 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
             serverHandlingOutput = null;
             try(CloseableHttpResponse response = client.execute(httpPost)) {
                 int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode != HttpStatus.SC_OK) throw new AIEngineException("Error while running use case. Status code equal to " + statusCode + ". " + response.getStatusLine().getReasonPhrase(), null);
+                if (statusCode != HttpStatus.SC_OK) throw new InternalException("Error while running use case. Status code equal to " + statusCode + ". " + response.getStatusLine().getReasonPhrase(), null);
             } catch (IOException e) {
-                throw new AIEngineException("Error while running use case (during the query)", e);
+                throw new InternalException("Error while running use case (during the query)", e);
             }
 
             // wait for ack
@@ -187,22 +179,26 @@ public class AsyncRestAPI implements AIEngineLinkageAdapter {
             try {
                 received = countDownLatch.await(this.maxIterationTime, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                throw new AIEngineException("Error while running use case. While waiting the ack", e);
+                throw new InternalException("Error while running use case. While waiting the ack", e);
             }
 
             // check ack
-            if (!received) throw new AIEngineException("Error while running use case. The end of the iteration was not notified on time", null);
-            if (serverHandlingOutput == null) throw new AIEngineException("Error while running use case. The server did not save the response information", null);
-            if (!serverHandlingOutput.isGoodAck()) throw new AIEngineException(String.format("Error while running use case. %s", serverHandlingOutput.getMessage()), null);
+            if (!received) throw new InternalException("Error while running use case. The end of the iteration was not notified on time", null);
+            if (serverHandlingOutput == null) throw new InternalException("Error while running use case. The server did not save the response information", null);
+            if (!serverHandlingOutput.isGoodAck()) throw new InternalException(String.format("Error while running use case. %s", serverHandlingOutput.getMessage()), null);
 
         } catch (IOException e) {
-            throw new AIEngineException("Error while running use case (during the query creation)", e);
+            throw new InternalException("Error while running use case (during the query creation)", e);
         }
     }
 
-    @Override
-    public void clean() throws AIEngineException {
-        this.server.stop(0);
+    public void clean() throws InternalException {
+        // stop own server
+        try {
+            if (this.server != null) this.server.stop(0);
+        } catch (Exception e) {
+            throw new InternalException("Error while shutting down own server", e);
+        }
     }
 
     private class ServerHandler implements HttpHandler {

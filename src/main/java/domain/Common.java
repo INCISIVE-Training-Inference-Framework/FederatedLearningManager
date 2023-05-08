@@ -63,9 +63,18 @@ public class Common {
         }
 
         try {
+            // end AI Engine execution own server
+            logger.debug("Ending AI Engine execution own server");
+            aiEngineLinkageAdapter.clean();
+        } catch (AIEngineException e) {
+            e.print(logger);
+            exceptionsThrown = true;
+        }
+
+        try {
             // end AI Engine execution
             logger.debug("Ending AI Engine execution");
-            aiEngineLinkageAdapter.clean();
+            aiEngineLinkageAdapter.end();
         } catch (AIEngineException e) {
             e.print(logger);
             exceptionsThrown = true;
