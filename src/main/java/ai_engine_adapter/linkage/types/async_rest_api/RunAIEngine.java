@@ -16,6 +16,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
 import org.json.JSONObject;
 import utils.FileMethods;
 
@@ -32,8 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 public class RunAIEngine {
 
-    private static final int PING_TIMEOUT = 3;  // seconds
-    private static final int RUN_TIMEOUT = 3;  // seconds
+    private static final int PING_HTTP_CALLS_TIMEOUT = 3;  // seconds
+    private static final int RUN_HTTP_CALLS_TIMEOUT = 3;  // seconds
+    private static final int ITERATION_SLEEP = 3;  // seconds
     private static CountDownLatch countDownLatch = null;
     private static ServerHandlingOutput serverHandlingOutput = null;
     private static final Logger logger = LogManager.getLogger(RunAIEngine.class);
@@ -107,13 +109,13 @@ public class RunAIEngine {
         boolean AIEngineStarted = false;
 
         // set config
-        RequestConfig config = RequestConfig.custom().setConnectTimeout(PING_TIMEOUT * 1000).build();
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(PING_HTTP_CALLS_TIMEOUT * 1000).build();
 
         // create client
-        try(CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build()) {
+        try (CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build()) {
 
             // iterate until AIEngine is ready
-            while (!AIEngineStarted && (currentTime.getTime() < (startTime.getTime() + this.maxInitializationTime  * 1000))) {
+            while (!AIEngineStarted && (currentTime.getTime() < (startTime.getTime() + this.maxInitializationTime * 1000))) {
 
                 // query AI Engine
                 try(CloseableHttpResponse response = client.execute(new HttpGet(String.format("http://%s%s", this.clientHost, this.pingUrl)))) {
@@ -129,7 +131,7 @@ public class RunAIEngine {
                 // sleep 3 seconds
                 if (!AIEngineStarted) {
                     try {
-                        Thread.sleep(3000);
+                        Thread.sleep(ITERATION_SLEEP * 1000);
                     } catch (InterruptedException e) {
                         throw new InternalException("Error while waiting for the AI Engine to be ready (during the thread sleep)", e);
                     }
@@ -148,7 +150,7 @@ public class RunAIEngine {
     public void run(String useCase) throws InternalException {
         logger.debug(String.format("Running the AI Engine. Use case: %s", useCase));
 
-        RequestConfig config = RequestConfig.custom().setConnectTimeout(RUN_TIMEOUT * 1000).build();
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(RUN_HTTP_CALLS_TIMEOUT * 1000).build();
         try(CloseableHttpClient client = HttpClientBuilder.create().setDefaultRequestConfig(config).build()) {
 
             // create post
@@ -185,7 +187,17 @@ public class RunAIEngine {
             // check ack
             if (!received) throw new InternalException("Error while running use case. The end of the iteration was not notified on time", null);
             if (serverHandlingOutput == null) throw new InternalException("Error while running use case. The server did not save the response information", null);
-            if (!serverHandlingOutput.isGoodAck()) throw new InternalException(String.format("Error while running use case. %s", serverHandlingOutput.getMessage()), null);
+            if (!serverHandlingOutput.isGoodAck()) {
+                JSONObject errorMessageJson;
+                String errorMessage;
+                try {
+                    errorMessageJson = new JSONObject(serverHandlingOutput.getMessage());
+                    errorMessage = errorMessageJson.getString("message");
+                } catch (JSONException e) {
+                    throw new InternalException("Error while running use case. Error while parsing returning error message", e);
+                }
+                throw new InternalException(String.format("Error while running use case. AI Engine error -> %s", errorMessage), null);
+            }
 
         } catch (IOException e) {
             throw new InternalException("Error while running use case (during the query creation)", e);
