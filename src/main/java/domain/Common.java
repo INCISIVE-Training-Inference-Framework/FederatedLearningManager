@@ -25,7 +25,7 @@ public class Common {
             AIEngineLinkageAdapter aiEngineLinkageAdapter,
             Logger logger
     ) throws FailureEndSignal {
-        boolean exceptionsThrown = false;
+        Exception exceptionsThrown = null;
 
         if (!success) {
             try {
@@ -37,7 +37,7 @@ public class Common {
                         platformAdapter.communicateExecutionFailure(failureEndpoint, failureMessage);
                     } catch (PlatformException e) {
                         e.print(logger);
-                        exceptionsThrown = true;
+                        exceptionsThrown = e;
                     }
                 }
 
@@ -49,7 +49,7 @@ public class Common {
             } catch (IOException e) {
                 logger.error(e.getMessage());
                 e.printStackTrace();
-                exceptionsThrown = true;
+                exceptionsThrown = e;
             }
         }
 
@@ -59,7 +59,7 @@ public class Common {
             communicationAdapter.cleanEnvironment();
         } catch (CommunicationException e) {
             e.print(logger);
-            exceptionsThrown = true;
+            exceptionsThrown = e;
         }
 
         try {
@@ -68,7 +68,7 @@ public class Common {
             aiEngineLinkageAdapter.clean();
         } catch (AIEngineException e) {
             e.print(logger);
-            exceptionsThrown = true;
+            exceptionsThrown = e;
         }
 
         try {
@@ -77,10 +77,13 @@ public class Common {
             aiEngineLinkageAdapter.end();
         } catch (AIEngineException e) {
             e.print(logger);
-            exceptionsThrown = true;
+            exceptionsThrown = e;
         }
 
-        if (exceptionsThrown || !success) throw new FailureEndSignal();
+        if (exceptionsThrown != null || !success) {
+            if (!success) throw new FailureEndSignal(failureMessage);
+            else throw new FailureEndSignal(exceptionsThrown.getMessage());
+        }
     }
 
 }

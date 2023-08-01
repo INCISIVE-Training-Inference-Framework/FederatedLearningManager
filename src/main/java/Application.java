@@ -16,6 +16,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import platform_adapter.PlatformAdapter;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +82,18 @@ public class Application {
             logger.error(e.getMessage());
             System.exit(1);
         } catch (FailureEndSignal e) {
+
+            try {
+                // extract error message to file
+                Path path = Paths.get("error_message.txt");
+                String errorMessage = e.getMessage().replaceAll("[\"']", ""); // cleans error message to avoid following parsing errors
+                byte[] strToBytes = errorMessage.getBytes();
+                Files.write(path, strToBytes);
+            } catch (IOException e2) {
+                logger.error(e2.getMessage());
+                e2.printStackTrace();
+            }
+
             System.exit(1);
         }
     }
