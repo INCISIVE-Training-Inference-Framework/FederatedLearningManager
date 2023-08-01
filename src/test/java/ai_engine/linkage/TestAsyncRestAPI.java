@@ -152,7 +152,7 @@ public class TestAsyncRestAPI {
             aiEngineLinkageAdapter.run(use_case);
         });
 
-        String expectedMessage = "Internal exception: AI Engine exception: Internal exception: Error while running use case. {\"SUCCESS\":false}";
+        String expectedMessage = "Internal exception: AI Engine exception: Internal exception: Error while running use case. Error while parsing returning error message";
         String actualMessage = exception.getMessage();
         assertEquals(expectedMessage, actualMessage);
     }

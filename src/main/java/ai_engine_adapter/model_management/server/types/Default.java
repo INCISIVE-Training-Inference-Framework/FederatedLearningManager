@@ -77,12 +77,12 @@ public class Default implements AIEngineServerModelManagementAdapter {
     @Override
     public byte[] loadMergedModel() throws AIEngineException {
         byte[] mergedModelBytes;
-        File modelDirectory = new File(this.outputMergedModelPath);
+        Path modelDirectory = Path.of(this.outputMergedModelPath);
 
         try {
             // compress directory
             try(ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                zipFile(modelDirectory, modelDirectory.getName(), outputStream);
+                zipFile(String.format("%s/*", modelDirectory), outputStream);
                 mergedModelBytes = outputStream.toByteArray();
             }
         } catch (IOException| IllegalArgumentException e) {
