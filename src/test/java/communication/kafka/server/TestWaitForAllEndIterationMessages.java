@@ -20,6 +20,7 @@ class TestWaitForAllEndIterationMessages {
     @Container
     private KafkaContainer KAFKA_CONTAINER = createKafkaContainer();
 
+    private final String messageSeparator = "///MESSAGE_SEP///";
     private static final String executionId = "executionId";
     private static Dummy aiEngineAdapterDummy;
     private ServerCommunicationAdapter kafkaCommunicator;
@@ -38,14 +39,14 @@ class TestWaitForAllEndIterationMessages {
 
     @Test
     void waitForAllEndIterationsMessagesSuccess() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "model", executionId + "_models_to_manager"));
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-1", "model", executionId + "_models_to_manager"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "model", executionId + "_models_to_manager"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-1", "model", executionId + "_models_to_manager"));
         kafkaCommunicator.waitForAllEndedIterationMessages(0, true, aiEngineAdapterDummy);
     }
 
     @Test
     void waitForAllEndIterationsMessagesNotArrived() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "model", executionId + "_models_to_manager"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "model", executionId + "_models_to_manager"));
         Exception exception = assertThrows(CommunicationException.class, () -> {
             kafkaCommunicator.waitForAllEndedIterationMessages(0, true, aiEngineAdapterDummy);
         });
@@ -57,7 +58,7 @@ class TestWaitForAllEndIterationMessages {
 
     @Test
     void waitForAllEndIterationsMessagesFailure() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "", executionId + "_models_to_manager"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "", executionId + "_models_to_manager"));
         Exception exception = assertThrows(CommunicationException.class, () -> {
             kafkaCommunicator.waitForAllEndedIterationMessages(0, true, aiEngineAdapterDummy);
         });

@@ -66,9 +66,9 @@ public class KafkaUtils {
         Map<String, Object> config = new HashMap<>();
         config.put("COMMUNICATION_ADAPTER_BOOTSTRAP_SERVERS_CONFIG", bootstrapServers);
         config.put("COMMUNICATION_ADAPTER_POLL_TIME_OUT", 2L);
-        config.put("COMMUNICATION_ADAPTER_INITIALIZATION_MESSAGE_TIME_OUT", 7L);
-        config.put("COMMUNICATION_ADAPTER_START_ITERATION_MESSAGE_TIME_OUT", 7L);
-        config.put("COMMUNICATION_ADAPTER_MAX_ITERATION_TIME", 7L);
+        config.put("COMMUNICATION_ADAPTER_INITIALIZATION_MESSAGE_TIME_OUT", 3L);
+        config.put("COMMUNICATION_ADAPTER_START_ITERATION_MESSAGE_TIME_OUT", 3L);
+        config.put("COMMUNICATION_ADAPTER_MAX_ITERATION_TIME", 3L);
         config.put("COMMUNICATION_ADAPTER_MAX_MODEL_SIZE", 1);
         return new KafkaClientCommunication(config, executionId, podId);
     }
@@ -77,8 +77,8 @@ public class KafkaUtils {
         Map<String, Object> config = new HashMap<>();
         config.put("COMMUNICATION_ADAPTER_BOOTSTRAP_SERVERS_CONFIG", bootstrapServers);
         config.put("COMMUNICATION_ADAPTER_POLL_TIME_OUT", 2L);
-        config.put("COMMUNICATION_ADAPTER_MAX_INITIALIZATION_TIME", 7L);
-        config.put("COMMUNICATION_ADAPTER_MAX_ITERATION_TIME", 7L);
+        config.put("COMMUNICATION_ADAPTER_MAX_INITIALIZATION_TIME", 3L);
+        config.put("COMMUNICATION_ADAPTER_MAX_ITERATION_TIME", 3L);
         config.put("COMMUNICATION_ADAPTER_MAX_MODEL_SIZE", 1);
         return new KafkaServerCommunication(config, executionId, 2);
     }

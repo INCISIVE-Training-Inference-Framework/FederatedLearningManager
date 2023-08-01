@@ -21,6 +21,8 @@ class TestSendEndedIterationMessage {
     @Container
     private final KafkaContainer KAFKA_CONTAINER = createKafkaContainer();
 
+    private final String messageSeparator = "///MESSAGE_SEP///";
+
     @Test
     void sendEndedIterationMessageSuccess() throws Exception {
         String executionId = "executionId";
@@ -42,7 +44,7 @@ class TestSendEndedIterationMessage {
                 "--from-beginning";
         String stdout = KAFKA_CONTAINER.execInContainer("/bin/sh", "-c", topicCommand).getStdout();
 
-        MatcherAssert.assertThat(stdout, containsString(executionId + "_" + podId + ":model"));
+        MatcherAssert.assertThat(stdout, containsString(executionId + messageSeparator + podId + ":model"));
     }
 
     @Test
@@ -66,7 +68,7 @@ class TestSendEndedIterationMessage {
                 "--from-beginning";
         String stdout = KAFKA_CONTAINER.execInContainer("/bin/sh", "-c", topicCommand).getStdout();
 
-        MatcherAssert.assertThat(stdout, containsString(executionId + "_" + podId + ":"));
+        MatcherAssert.assertThat(stdout, containsString(executionId + messageSeparator + podId + ":"));
     }
 
     @Test

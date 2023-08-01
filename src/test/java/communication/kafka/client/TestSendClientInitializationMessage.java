@@ -19,6 +19,8 @@ class TestSendClientInitializationMessage {
     @Container
     private final KafkaContainer KAFKA_CONTAINER = createKafkaContainer();
 
+    private final String messageSeparator = "///MESSAGE_SEP///";
+
     @Test
     void sendClientInitializationMessageSuccess() throws Exception {
         String executionId = "executionId";
@@ -40,7 +42,7 @@ class TestSendClientInitializationMessage {
                 "--from-beginning";
         String stdout = KAFKA_CONTAINER.execInContainer("/bin/sh", "-c", topicCommand).getStdout();
 
-        MatcherAssert.assertThat(stdout, containsString(executionId + "_" + podId + ":true"));
+        MatcherAssert.assertThat(stdout, containsString(executionId + messageSeparator + podId + ":true"));
     }
 
     @Test
@@ -64,7 +66,7 @@ class TestSendClientInitializationMessage {
                 "--from-beginning";
         String stdout = KAFKA_CONTAINER.execInContainer("/bin/sh", "-c", topicCommand).getStdout();
 
-        MatcherAssert.assertThat(stdout, containsString(executionId + "_" + podId + ":false"));
+        MatcherAssert.assertThat(stdout, containsString(executionId + messageSeparator + podId + ":false"));
     }
 
     @Test

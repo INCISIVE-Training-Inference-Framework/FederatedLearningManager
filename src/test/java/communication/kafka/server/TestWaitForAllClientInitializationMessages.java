@@ -20,6 +20,8 @@ class TestWaitForAllClientInitializationMessages {
     @Container
     private KafkaContainer KAFKA_CONTAINER = createKafkaContainer();
 
+    private final String messageSeparator = "///MESSAGE_SEP///";
+
     private static final String executionId = "executionId";
     private static Dummy aiEngineAdapterDummy;
     private ServerCommunicationAdapter kafkaCommunicator;
@@ -38,14 +40,14 @@ class TestWaitForAllClientInitializationMessages {
 
     @Test
     void waitForAllClientInitializationMessagesSuccess() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "true", "status"));
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-1", "true", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "true", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-1", "true", "status"));
         kafkaCommunicator.waitForAllClientInitializationMessages();
     }
 
     @Test
     void waitForAllClientInitializationMessagesNotArrived() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "true", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "true", "status"));
         Exception exception = assertThrows(CommunicationException.class, () -> {
             kafkaCommunicator.waitForAllClientInitializationMessages();
         });
@@ -57,7 +59,7 @@ class TestWaitForAllClientInitializationMessages {
 
     @Test
     void waitForAllClientInitializationMessagesIncludingManagerNotArrived() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "true", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "true", "status"));
         KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId, "true", "status"));
         Exception exception = assertThrows(CommunicationException.class, () -> {
             kafkaCommunicator.waitForAllClientInitializationMessages();
@@ -70,8 +72,8 @@ class TestWaitForAllClientInitializationMessages {
 
     @Test
     void waitForAllClientInitializationMessagesIncludingOtherExecutionNotArrived() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "true", "status"));
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "other_podId-0", "true", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "true", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "other" + messageSeparator + "podId-0", "true", "status"));
         Exception exception = assertThrows(CommunicationException.class, () -> {
             kafkaCommunicator.waitForAllClientInitializationMessages();
         });
@@ -83,7 +85,7 @@ class TestWaitForAllClientInitializationMessages {
 
     @Test
     void waitForAllClientInitializationMessagesFailure() throws Exception {
-        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + "_podId-0", "false", "status"));
+        KAFKA_CONTAINER.execInContainer("sh", "-c", generateProducerMessage(executionId + messageSeparator + "podId-0", "false", "status"));
         Exception exception = assertThrows(CommunicationException.class, () -> {
             kafkaCommunicator.waitForAllClientInitializationMessages();
         });

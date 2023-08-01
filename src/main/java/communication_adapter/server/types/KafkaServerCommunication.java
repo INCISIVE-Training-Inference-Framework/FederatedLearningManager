@@ -149,8 +149,9 @@ public class KafkaServerCommunication implements ServerCommunicationAdapter {
 
             if (consumerRecords.count() > 0) {
                 for (ConsumerRecord<String, byte[]> record: consumerRecords) {
-                    // key -> executionId_clientId
+                    // key -> executionId MESSAGE_SEP clientId
                     // value -> model or null
+                    if (!record.key().contains(messageSeparator)) throw new CommunicationException("Ended iteration message key without message separator", null);
                     String clientId = record.key().split(messageSeparator)[1];
                     byte[] bytes = record.value();
                     if (bytes != null && bytes.length != 0) {
