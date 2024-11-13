@@ -60,11 +60,24 @@ Regarding the input arguments, they differ depending on the chosen component beh
   - NUMBER_ITERATIONS: idem
   - USE_CASE: the use case to run in the AI Engine. In the case of INCISIVE, this should correspond to `training_from_scratch` or `training_from_pretrained_model`.
 
-After setting up the environment variables and choosing the proper input arguments, the component can run as follows (completing $INPUT_ARGS with the corresponding input arguments):
+After setting up the environment variables and choosing the proper input arguments, the component can run as follows (completing $ENV_X $INPUT_ARGS with the corresponding environment variables and input arguments):
 ```
-docker run -it processor-resource-manager $INPUT_ARGS
+docker run -it processor-resource-manager \ 
+-e COMMUNICATION_ADAPTER=$ENV_1 \ 
+-e AI_ENGINE_LINKAGE_ADAPTER=$ENV_2 \ 
+-e AI_ENGINE_MODEL_MANAGEMENT_ADAPTER=$ENV_3 \
+-e AI_ENGINE_MODEL_MANAGEMENT_ADAPTER=$ENV_4 \
+-e PLATFORM_ADAPTER=$ENV_5 \
+$INPUT_ARGS
 ```
 In the case that an external element needs to be notified in case of failure, please use the following command:
 ```
-docker run -it processor-resource-manager $INPUT_ARGS --failure-endpoint http://HOSTNAME:PORT/PATH_TO_HIT_IN_CASE_OF_ERROR
+docker run -it processor-resource-manager \ 
+-e COMMUNICATION_ADAPTER=$ENV_1 \ 
+-e AI_ENGINE_LINKAGE_ADAPTER=$ENV_2 \ 
+-e AI_ENGINE_MODEL_MANAGEMENT_ADAPTER=$ENV_3 \
+-e AI_ENGINE_MODEL_MANAGEMENT_ADAPTER=$ENV_4 \
+-e PLATFORM_ADAPTER=$ENV_5 \
+$INPUT_ARGS \
+--failure-endpoint http://HOSTNAME:PORT/PATH_TO_HIT_IN_CASE_OF_ERROR
 ```
